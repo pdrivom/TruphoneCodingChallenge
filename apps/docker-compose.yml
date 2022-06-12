@@ -1,0 +1,105 @@
+version: '2.1'
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - 22181:2181
+    networks:
+      - kafka
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    ports:
+      - 29092:29092
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - kafka
+    healthcheck:
+      test: kafka-topics --bootstrap-server kafka:9092 --list
+      interval: 5s
+      timeout: 10s
+      retries: 3
+
+  producer:
+    hostname: kafka-producer
+    build: producer
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - 5000:5000
+    networks:
+      - kafka
+
+  consumer:
+    build: consumer
+    depends_on:
+      kafka:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+    networks:
+      - kafka
+    volumes:
+      - ./consumer:/consumer
+
+  api:
+    build: api
+    hostname: usage-api
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+    ports:
+      - 8000:8000
+    networks:
+      - timescale
+      - api
+    volumes:
+      - ./api:/api
+
+  timescaledb:
+      image: timescale/timescaledb:2.7.0-pg13
+      hostname: timescale-db
+      environment:
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+      volumes:
+        - ./timescaledb:/var/lib/postgresql/data
+      healthcheck:
+        test: [ "CMD", "pg_isready", "-q", "-d", "postgres", "-U", "postgres" ]
+        interval: 10s
+        timeout: 5s
+        retries: 5
+      ports:
+        - 5432:5432
+      networks:
+      - timescale
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "admin@email.com"
+      PGADMIN_DEFAULT_PASSWORD: "thrupone"
+    ports:
+      - 16543:80
+    depends_on:
+      - timescaledb
+    networks:
+      - timescale
+
+networks:
+  timescale:
+  api:
+  kafka:
+    driver: bridge
