@@ -18,4 +18,8 @@ docker-compose -f docker-compose.yml run --rm consumer sh -c "python consumer.py
 
 ## Why this stack
 
+- SQL
+- Timeseries
+- Grafana Datasource
+
 ## How to scale
