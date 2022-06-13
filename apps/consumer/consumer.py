@@ -97,7 +97,7 @@ class SIMCardUsage(TimescaleDB, LoggableObject):
     def onboarding(self):
         if not self.__create_organizations_table() and not self.__create_simcards_table():
             self.__initialize_inventory()
-        self.__create_usage_hypertable()
+            self.__create_usage_hypertable()
 
         print('Onboarding finished.')
 
@@ -111,8 +111,13 @@ class SIMCardUsage(TimescaleDB, LoggableObject):
     def __create_simcards_table(self):
         exists = self.check_table_exists('simcards')
         if not exists:
-            query_create_organizations_table = "CREATE TABLE simcards (id SERIAL PRIMARY KEY, sim_card_id VARCHAR(16));"
-            self.execute_sql_statement([query_create_organizations_table])
+            query_create_simcards_table = """CREATE TABLE simcards (
+                                                    id SERIAL PRIMARY KEY,
+                                                    sim_card_id VARCHAR(16),
+                                                    org_id INTEGER,
+                                                    FOREIGN KEY (org_id) REFERENCES organizations (id)
+                                                    );"""
+            self.execute_sql_statement([query_create_simcards_table])
         return exists
 
     def __create_usage_hypertable(self):
@@ -132,8 +137,11 @@ class SIMCardUsage(TimescaleDB, LoggableObject):
             orgs = set()
             sims = []
             for card in inventory:
-                orgs.add(f"INSERT INTO organizations (org_id) VALUES ('{card['org-id']}');")
-                sims.append(f"INSERT INTO simcards (sim_card_id) VALUES ('{card['sim-card-id']}');")
+                org = card['org-id']
+                sim = card['sim-card-id']
+                orgs.add(f"INSERT INTO organizations (org_id) VALUES ('{org}');")
+                id_org = f"(SELECT id from organizations WHERE org_id='{org}')"
+                sims.append(f"INSERT INTO simcards (sim_card_id,org_id) VALUES ('{sim}',{id_org});")
             self.execute_sql_statement(orgs)
             self.execute_sql_statement(sims)
         except Exception as e:
