@@ -1,4 +1,4 @@
-version: '2.1'
+version: '3'
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
@@ -27,8 +27,8 @@ services:
       - kafka
     healthcheck:
       test: kafka-topics --bootstrap-server kafka:9092 --list
-      interval: 5s
-      timeout: 10s
+      interval: 10s
+      timeout: 30s
       retries: 3
 
   producer:
@@ -41,18 +41,6 @@ services:
       - 5000:5000
     networks:
       - kafka
-
-  consumer:
-    build: consumer
-    depends_on:
-      kafka:
-        condition: service_healthy
-      timescaledb:
-        condition: service_healthy
-    networks:
-      - kafka
-    volumes:
-      - ./consumer:/consumer
 
   api:
     build: api
@@ -70,10 +58,10 @@ services:
 
   timescaledb:
       image: timescale/timescaledb:2.7.0-pg13
-      hostname: timescale-db
-      environment:
-        POSTGRES_USER: postgres
-        POSTGRES_PASSWORD: postgres
+      hostname: &postgreshost timescale-db
+      extends:
+        file: timescaledb.yml
+        service: postgres
       volumes:
         - ./timescaledb:/var/lib/postgresql/data
       healthcheck:
@@ -85,6 +73,26 @@ services:
         - 5432:5432
       networks:
       - timescale
+
+  consumer:
+    build: consumer
+    depends_on:
+      kafka:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+    extends:
+        file: timescaledb.yml
+        service: postgres
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      POSTGRES_HOST: *postgreshost
+      POSTGRES_PORT: 5432
+    networks:
+      - kafka
+      - timescale
+    volumes:
+      - ./consumer:/usr/src/consumer
 
   pgadmin:
     image: dpage/pgadmin4
