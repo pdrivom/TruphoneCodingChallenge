@@ -3,6 +3,7 @@ import json
 from kafka import KafkaConsumer
 import psycopg2
 from dateutil import parser
+from psycopg2.extras import execute_values
 
 inventory = [
 { "sim-card-id": "89440001", "org-id": "a01b7" },
@@ -47,11 +48,11 @@ class TimescaleDB(LoggableObject):
         except psycopg2.Error as e:
             print(e.pgerror)
 
-    def execute_sql_statement(self, queries):
+    def execute_sql_statement(self, statements):
         try:
             cursor = self.conn.cursor()
-            for query in queries:
-                cursor.execute(query)
+            for statement in statements:
+                cursor.execute(statement)
             self.conn.commit()
             cursor.close()
         except Exception as e:
@@ -61,7 +62,7 @@ class TimescaleDB(LoggableObject):
         try:
             cursor = self.conn.cursor()
             cursor.execute(query)
-            data = cursor.fetchall()
+            insert = cursor.fetchall()
             cursor.close()
             return data
         except psycopg2.Error as e:
@@ -89,6 +90,11 @@ class TimescaleDB(LoggableObject):
     def check_table_exists(self, tablename):
         return self.execute_sql_query_fetch_one(self.__build_select_exist_query(tablename))[0]
 
+    def execute_sql_statement_batch(self, statement, batch):
+        cursor = self.conn.cursor()
+        execute_values(cursor, statement, batch)
+        self.conn.commit()
+        cursor.close()
 
 class SIMCardUsage(TimescaleDB, LoggableObject):
     def __init__(self):
@@ -166,9 +172,13 @@ class KafkaTopicConsumer(LoggableObject):
 
 
 class KafkaTopicToTimescaleDb(SIMCardUsage, KafkaTopicConsumer):
+
+    current_batch = []
+
     def __init__(self, topic):
         SIMCardUsage.__init__(self)
         KafkaTopicConsumer.__init__(self, topic)
+        self.MAX_BATCH_SIZE = int(os.environ['MAX_BATCH_SIZE'])
         self.connect()
         self.onboarding()
 
@@ -178,14 +188,18 @@ class KafkaTopicToTimescaleDb(SIMCardUsage, KafkaTopicConsumer):
     def __insert_simcard_usage_hypertable(self, time, sim_card_id, bytes_used):
         if self.__validate_datetime(time):
             insert = f"""INSERT INTO simcard_usage (time,sim_card_id,bytes_used)
-                        VALUES ('{time}',
-                        (SELECT id from simcards WHERE sim_card_id='{sim_card_id}'),
-                        '{bytes_used}');"""
-            self.execute_sql_statement([insert])
+                            VALUES ('{time}',
+                            (SELECT id from simcards WHERE sim_card_id='{sim_card_id}'),
+                            '{bytes_used}');"""
+            self.current_batch.append(insert)
+            print(self.MAX_BATCH_SIZE)
+            print(len(self.current_batch))
+            if len(self.current_batch) >= self.MAX_BATCH_SIZE:
+                self.execute_sql_statement(self.current_batch)
+                self.current_batch = []
 
     def __process_insert_simcard_usage_hypertable(self, message):
         self.__insert_simcard_usage_hypertable(message['date'],message['sim-card-id'], message['bytes-used'])
-
 
     def __validate_datetime(self, datetime):
         try:

@@ -81,6 +81,8 @@ services:
         condition: service_healthy
       timescaledb:
         condition: service_healthy
+      producer:
+        condition: service_started
     extends:
         file: timescaledb.yml
         service: postgres
@@ -88,6 +90,7 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       POSTGRES_HOST: *postgreshost
       POSTGRES_PORT: 5432
+      MAX_BATCH_SIZE: 200
     networks:
       - kafka
       - timescale
