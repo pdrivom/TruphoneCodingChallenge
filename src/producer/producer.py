@@ -7,7 +7,6 @@ from flask import Flask
 app = Flask(__name__)
 
 
-
 @app.route('/api/v1/producer/status', methods=['GET'])
 def status():
     return {'status': 'OK'}
@@ -54,10 +53,12 @@ def produce():
                                 "date": "2020-02-{}T{}:{}:{}Z".format(day, hours, minutes, "00"),
                             },
                         )
+            print('data generated!')
             return { 'message': 'data generated!' }, 200
     except Exception as e:
         return str(e), 500
 
+produce()
 
 if __name__ == '__main__':
     app.run(host='kafka-producer', port=5000, debug=True)

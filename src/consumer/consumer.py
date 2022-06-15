@@ -26,18 +26,22 @@ inventory = [
 { "sim-card-id": "89440016", "org-id": "f00ff" }
 ]
 
-class SIMCardUsage(TimescaleDB):
+class SaveSIMCardUsage(TimescaleDB):
+    # Object to save on the TimescaleDB the orgs, simcards and usage
     def __init__(self):
+        # Parent class ctor feeding
         super().__init__('usage')
 
     def onboarding(self):
+        # Calls the Create and populate of the organizations and simcard tables and also simcard_usage hypertable
         if not self.__create_organizations_table() and not self.__create_simcards_table():
-            self.__initialize_inventory()
+            self.__insert_inventory_tables()
             self.__create_usage_hypertable()
 
         print('Onboarding finished.')
 
     def __create_organizations_table(self):
+        # Creates organizations table
         exists = self.check_table_exists('organizations')
         if not exists:
             query_create_organizations_table = "CREATE TABLE organizations (id SERIAL PRIMARY KEY, org_id VARCHAR(8));"
@@ -45,6 +49,7 @@ class SIMCardUsage(TimescaleDB):
         return exists
 
     def __create_simcards_table(self):
+        # Creates simcards table
         exists = self.check_table_exists('simcards')
         if not exists:
             query_create_simcards_table = """CREATE TABLE simcards (
@@ -57,6 +62,7 @@ class SIMCardUsage(TimescaleDB):
         return exists
 
     def __create_usage_hypertable(self):
+        # Creates simcard_usage hypertable
         exists = self.check_table_exists('simcard_usage')
         if not exists:
             query_create_usage_table = """CREATE TABLE simcard_usage (
@@ -68,7 +74,8 @@ class SIMCardUsage(TimescaleDB):
             query_create_usage_hypertable = "SELECT create_hypertable('simcard_usage', 'time');"
             self.execute_sql_statement([query_create_usage_table, query_create_usage_hypertable])
 
-    def __initialize_inventory(self):
+    def __insert_inventory_tables(self):
+        # Populates of the organizations and simcard tables
         try:
             orgs = set()
             sims = []
@@ -85,11 +92,13 @@ class SIMCardUsage(TimescaleDB):
 
 
 class KafkaTopicConsumer(LoggableObject):
+    # Object to handle kafka consumer events and run a function on each event
     def __init__(self, topic):
         self.server = os.environ['KAFKA_BOOTSTRAP_SERVERS']
         self.topic = topic
 
     def start_consuming(self, action):
+        # starts the async KafkaConsumer and on new message, run a given function
         self.consumer = KafkaConsumer(self.topic,value_deserializer=lambda m: json.loads(m.decode('utf-8')),bootstrap_servers="kafka:9092")
         print(f"Consuming from topic {self.topic} on server {self.server}")
 
@@ -101,21 +110,24 @@ class KafkaTopicConsumer(LoggableObject):
             self.log_and_solve_error(e)
 
 
-class KafkaTopicToTimescaleDb(SIMCardUsage, KafkaTopicConsumer):
-
+class KafkaTopicToTimescaleDb(SaveSIMCardUsage, KafkaTopicConsumer):
+    # Object to bridge the data from KafkaConsumer to TimescaleDB
     current_batch = []
 
     def __init__(self, topic):
-        SIMCardUsage.__init__(self)
+        # Connect to Kafka and TimescaleDB
+        SaveSIMCardUsage.__init__(self)
         KafkaTopicConsumer.__init__(self, topic)
-        self.MAX_BATCH_SIZE = int(os.environ['MAX_BATCH_SIZE'])
+        self.MAX_BATCH_SIZE = int(os.environ['MAX_BATCH_SIZE']) # Batch size to buffer before saving into the database
         self.connect()
         self.onboarding()
 
     def start_bridging(self):
+        # Starts consuming from Kafka and executes the function that saves on de database
         self.start_consuming(self.__process_insert_simcard_usage_hypertable)
 
     def __insert_simcard_usage_hypertable(self, time, sim_card_id, bytes_used):
+        # Validates the time stamp and inserts record into the hypertable
         if self.__validate_datetime(time):
             insert = f"""INSERT INTO simcard_usage (time,sim_card_id,bytes_used)
                             VALUES ('{time}',
@@ -129,9 +141,11 @@ class KafkaTopicToTimescaleDb(SIMCardUsage, KafkaTopicConsumer):
                 self.current_batch = []
 
     def __process_insert_simcard_usage_hypertable(self, message):
+        # Json file from Kafka topic property splitting
         self.__insert_simcard_usage_hypertable(message['date'],message['sim-card-id'], message['bytes-used'])
 
     def __validate_datetime(self, datetime):
+        # Validates if the timestamp makes sense
         try:
             parser.parse(datetime)
             return True

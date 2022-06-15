@@ -27,8 +27,8 @@ services:
       - kafka
     healthcheck:
       test: kafka-topics --bootstrap-server kafka:9092 --list
-      interval: 10s
-      timeout: 10s
+      interval: 20s
+      timeout: 20s
       retries: 3
 
   producer:
@@ -39,6 +39,8 @@ services:
     depends_on:
       kafka:
         condition: service_healthy
+      consumer:
+        condition: service_started
     ports:
       - 5000:5000
     networks:
@@ -71,8 +73,6 @@ services:
         condition: service_healthy
       timescaledb:
         condition: service_healthy
-      producer:
-        condition: service_started
     extends:
         file: timescaledb.yml
         service: postgres
@@ -100,13 +100,14 @@ services:
       service: postgres
     environment:
       POSTGRES_HOST: *postgreshost
+      POSTGRES_PORT: 5432
     ports:
       - 8000:8000
     networks:
       - timescale
       - api
     volumes:
-      - ./api:/api
+      - ./api:/usr/src/api
 
   pgadmin:
     image: dpage/pgadmin4

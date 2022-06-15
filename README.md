@@ -33,11 +33,16 @@
     - (gRPC) no bi-directional or streaming needed
     - (GraphQL) upfront dev effort and more field related queries
 
-## How to scale and make production ready
+## How to make production ready
 
 - certificate to expose API on https
 - test security token on the requests
 - add unit testing to consumer
+
+## How to scale
+
+- [Distributed Hypertables](https://docs.timescale.com/api/latest/distributed-hypertables/#distributed-hypertables)
+- [Partitioning in hypertables with chunks](https://docs.timescale.com/timescaledb/latest/overview/core-concepts/hypertables-and-chunks/#partitioning-in-hypertables-with-chunks)
 
 ## Future of the repo
 

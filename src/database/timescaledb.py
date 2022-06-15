@@ -4,15 +4,12 @@ import os
 
 class LoggableObject(object):
     def log_and_solve_error(self, e):
-        if e is psycopg2.Error:
-            cursor = self.conn.cursor()
-            cursor.execute("ROLLBACK")
-            self.conn.commit()
-            cursor.close()
+        # Logging can be managed here
         print(e)
 
 class TimescaleDB(LoggableObject):
     def __init__(self, dbname):
+        # Timescale configs loaded from env. variables
         user = os.environ['POSTGRES_USER']
         password = os.environ['POSTGRES_PASSWORD']
         host = os.environ['POSTGRES_HOST']
@@ -21,6 +18,7 @@ class TimescaleDB(LoggableObject):
         print(f"TimescaleDB connection string: {self.CONNECTION}")
 
     def connect(self):
+        # Connects to TimescaleDB
         try:
             self.conn = psycopg2.connect(self.CONNECTION)
             print(f"Connected to TimescaleDB [{self.CONNECTION}]")
@@ -28,6 +26,7 @@ class TimescaleDB(LoggableObject):
             print(e.pgerror)
 
     def execute_sql_statement(self, statements):
+        # Executes a list of statements then commits the changes
         try:
             cursor = self.conn.cursor()
             for statement in statements:
@@ -38,16 +37,18 @@ class TimescaleDB(LoggableObject):
             self.log_and_solve_error(e)
 
     def execute_sql_query_fetch_all(self, query):
+        # Gets all records returned by query
         try:
             cursor = self.conn.cursor()
             cursor.execute(query)
             insert = cursor.fetchall()
             cursor.close()
-            return data
+            return insert
         except psycopg2.Error as e:
             print(e.pgerror)
 
     def execute_sql_query_fetch_one(self, query):
+        # Gets first record returned by query
         try:
             cursor = self.conn.cursor()
             cursor.execute(query)
@@ -58,6 +59,7 @@ class TimescaleDB(LoggableObject):
             print(e.pgerror)
 
     def __build_select_exist_query(self, table):
+        # Builds a query to check table existence
         return f"""SELECT EXISTS (
                     SELECT FROM
                     pg_tables
