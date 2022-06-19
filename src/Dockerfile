@@ -22,7 +22,6 @@ CMD ["python","-u","consumer.py"]
 FROM base as api
 WORKDIR /usr/src/api
 COPY ./api/requirements.txt ./
-
 RUN apk add --no-cache python3 postgresql-libs
 RUN apk add --no-cache --virtual .build-deps gcc python3-dev musl-dev postgresql-dev
 RUN pip install --upgrade --no-cache-dir -r requirements.txt
