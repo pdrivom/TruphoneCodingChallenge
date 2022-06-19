@@ -1,5 +1,7 @@
 # SIM Card Usage Coding Challenge
 
+## Environment of Development
+
 ## Introduction
 
 - no unit tests for consumer (why not and what to test)
@@ -17,15 +19,13 @@
     - http://domain:port/api/v1/simcard/89440010/usage?start=2020-01-01&end=2020-01-31&every=1day&page=1&size=5
 
 
-
-
-
 ## Database Schema
 
 - view vs query (views make sense if used for multiple services/systems)
 - join vs column
 - batch(pgcopy) vs row (psycopg2)
 
+## Development steps
 
 ## Why this stack
 
@@ -40,7 +40,9 @@
 
 - certificate to expose API on https
 - test security token on the requests
+- add unit tests for other non-required features
 - add unit testing to consumer
+- add database tests
 
 ## How to scale
 
@@ -49,4 +51,5 @@
 
 ## Future of the repo
 - add flake8 for linting
+- add consumer and database tests
 - add a NodeJS(Koa/Loopback/Nest) to implement the API in order to make clear compare between the two technologies
