@@ -8,13 +8,16 @@
 ## How it works
 
 - consumer: docker-compose -f docker-compose.yml run --rm consumer sh -c "python consumer.py"
-- api: docker-compose -f docker-compose.yml run --rm api sh -c "uvicorn api:app --host 0.0.0.0 --port 8000 --reload"
+- api: docker-compose -f docker-compose.yml run --rm --service-ports api sh -c "uvicorn api:app --host 0.0.0.0 --port 8000 --reload"
 - api test: docker-compose -f docker-compose.yml run --rm api sh -c "pytest"
 - url: http://domain:port/api/v1/entity/subentity/id_parameter?query_parameters
     - http://domain:port/api/v1/usage/organizations
     - http://domain:port/api/v1/usage/simcards
-    - http://domain:port/api/v1/usage/organization/x00g8?start=2012-01-01&end=2012-01-31&page_num=1&page_size=5
-    - http://domain:port/api/v1/usage/simcard/89440010?start=2012-01-01&end=2012-01-31&page_num=1&page_size=5
+    - http://domain:port/api/v1/organization/x00g8/usage?start=2020-01-01&end=2020-01-31&every=1hour&page=1&size=5
+    - http://domain:port/api/v1/simcard/89440010/usage?start=2020-01-01&end=2020-01-31&every=1day&page=1&size=5
+
+
+
 
 
 ## Database Schema
@@ -45,5 +48,5 @@
 - [Partitioning in hypertables with chunks](https://docs.timescale.com/timescaledb/latest/overview/core-concepts/hypertables-and-chunks/#partitioning-in-hypertables-with-chunks)
 
 ## Future of the repo
-
+- add flake8 for linting
 - add a NodeJS(Koa/Loopback/Nest) to implement the API in order to make clear compare between the two technologies
