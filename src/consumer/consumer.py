@@ -55,8 +55,8 @@ class SaveSIMCardUsage(TimescaleDB):
             query_create_simcards_table = """CREATE TABLE simcards (
                                                     id SERIAL PRIMARY KEY,
                                                     sim_card_id VARCHAR(16),
-                                                    org_id INTEGER,
-                                                    FOREIGN KEY (org_id) REFERENCES organizations (id)
+                                                    id_org INTEGER,
+                                                    FOREIGN KEY (id_org) REFERENCES organizations (id)
                                                     );"""
             self.execute_sql_statement([query_create_simcards_table])
         return exists
@@ -67,9 +67,9 @@ class SaveSIMCardUsage(TimescaleDB):
         if not exists:
             query_create_usage_table = """CREATE TABLE simcard_usage (
                                             time TIMESTAMPTZ NOT NULL,
-                                            sim_card_id INTEGER,
+                                            id_sim_card INTEGER,
                                             bytes_used INTEGER,
-                                            FOREIGN KEY (sim_card_id) REFERENCES simcards (id)
+                                            FOREIGN KEY (id_sim_card) REFERENCES simcards (id)
                                             );"""
             query_create_usage_hypertable = "SELECT create_hypertable('simcard_usage', 'time');"
             self.execute_sql_statement([query_create_usage_table, query_create_usage_hypertable])
@@ -84,12 +84,11 @@ class SaveSIMCardUsage(TimescaleDB):
                 sim = card['sim-card-id']
                 orgs.add(f"INSERT INTO organizations (org_id) VALUES ('{org}');")
                 id_org = f"(SELECT id from organizations WHERE org_id='{org}')"
-                sims.append(f"INSERT INTO simcards (sim_card_id,org_id) VALUES ('{sim}',{id_org});")
+                sims.append(f"INSERT INTO simcards (sim_card_id,id_org) VALUES ('{sim}',{id_org});")
             self.execute_sql_statement(orgs)
             self.execute_sql_statement(sims)
         except Exception as e:
             self.log_and_solve_error(e)
-
 
 class KafkaTopicConsumer(LoggableObject):
     # Object to handle kafka consumer events and run a function on each event
@@ -99,7 +98,12 @@ class KafkaTopicConsumer(LoggableObject):
 
     def start_consuming(self, action):
         # starts the async KafkaConsumer and on new message, run a given function
-        self.consumer = KafkaConsumer(self.topic,value_deserializer=lambda m: json.loads(m.decode('utf-8')),bootstrap_servers="kafka:9092")
+        self.consumer = KafkaConsumer(self.topic,
+        value_deserializer=lambda m: json.loads(m.decode('utf-8')),
+        bootstrap_servers="kafka:9092",
+        auto_offset_reset='earliest',
+        enable_auto_commit=True,)
+
         print(f"Consuming from topic {self.topic} on server {self.server}")
 
         try:
@@ -108,7 +112,6 @@ class KafkaTopicConsumer(LoggableObject):
                     action(message.value)
         except Exception as e:
             self.log_and_solve_error(e)
-
 
 class KafkaTopicToTimescaleDb(SaveSIMCardUsage, KafkaTopicConsumer):
     # Object to bridge the data from KafkaConsumer to TimescaleDB
@@ -129,16 +132,15 @@ class KafkaTopicToTimescaleDb(SaveSIMCardUsage, KafkaTopicConsumer):
     def __insert_simcard_usage_hypertable(self, time, sim_card_id, bytes_used):
         # Validates the time stamp and inserts record into the hypertable
         if self.__validate_datetime(time):
-            insert = f"""INSERT INTO simcard_usage (time,sim_card_id,bytes_used)
+            insert = f"""INSERT INTO simcard_usage (time,id_sim_card,bytes_used)
                             VALUES ('{time}',
                             (SELECT id from simcards WHERE sim_card_id='{sim_card_id}'),
                             '{bytes_used}');"""
             self.current_batch.append(insert)
-            print(self.MAX_BATCH_SIZE)
-            print(len(self.current_batch))
             if len(self.current_batch) >= self.MAX_BATCH_SIZE:
                 self.execute_sql_statement(self.current_batch)
                 self.current_batch = []
+                print('Batch inserted!')
 
     def __process_insert_simcard_usage_hypertable(self, message):
         # Json file from Kafka topic property splitting
