@@ -32,7 +32,7 @@ class TimescaleReadUsage(Metadata):
         return self.execute_sql_query_fetch_one(query)
 
     def select_simcard(self, sim_card_id):
-        query = f"SELECT org_id FROM inventory WHERE sim_card_id like '{sim_card_id}';"
+        query = f"SELECT sim_card_id FROM inventory WHERE sim_card_id like '{sim_card_id}';"
         return self.execute_sql_query_fetch_one(query)
 
     def connect_sync(self):

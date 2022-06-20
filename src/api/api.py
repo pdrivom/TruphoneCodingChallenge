@@ -62,7 +62,6 @@ def __read_organization(org_id: str):
 
 def __read_simcard(sim_card_id: str):
     sim = timescale.select_simcard(sim_card_id)
-    print(sim)
     if sim is None:
         raise HTTPException(status_code=404, detail= f"No simcard {sim_card_id} found!")
     return sim

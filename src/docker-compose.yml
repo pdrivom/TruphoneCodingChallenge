@@ -109,18 +109,6 @@ services:
     volumes:
       - ./api:/usr/src/api
 
-  pgadmin:
-    image: dpage/pgadmin4
-    environment:
-      PGADMIN_DEFAULT_EMAIL: "admin@email.com"
-      PGADMIN_DEFAULT_PASSWORD: "admin"
-    ports:
-      - 16543:80
-    depends_on:
-      - timescaledb
-    networks:
-      - timescale
-
 networks:
   timescale:
   api:
