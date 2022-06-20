@@ -27,7 +27,7 @@ services:
       - kafka
     healthcheck:
       test: kafka-topics --bootstrap-server kafka:9092 --list
-      interval: 20s
+      interval: 30s
       timeout: 20s
       retries: 3
 
