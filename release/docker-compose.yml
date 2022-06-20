@@ -34,9 +34,6 @@ services:
   producer:
     hostname: kafka-producer
     image: pdrivom/producer:v1
-    build:
-      context: ./
-      target: producer
     depends_on:
       kafka:
         condition: service_healthy
@@ -50,11 +47,10 @@ services:
   timescaledb:
       image: timescale/timescaledb:2.7.0-pg13
       hostname: &postgreshost timescale-db
-      extends:
-        file: timescaledb.yml
-        service: postgres
-      volumes:
-        - ./volumes/timescaledb:/var/lib/postgresql/data
+      environment:
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+        POSTGRES_DB: usage
       healthcheck:
         test: [ "CMD", "pg_isready", "-q", "-d", "postgres", "-U", "postgres" ]
         interval: 10s
@@ -67,41 +63,33 @@ services:
 
   consumer:
     image: pdrivom/consumer:v1
-    build:
-      context: ./
-      target: consumer
     depends_on:
       kafka:
         condition: service_healthy
       timescaledb:
         condition: service_healthy
-    extends:
-        file: timescaledb.yml
-        service: postgres
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: usage
       POSTGRES_HOST: *postgreshost
       POSTGRES_PORT: 5432
       MAX_BATCH_SIZE: 200
     networks:
       - kafka
       - timescale
-    volumes:
-      - ./consumer:/usr/src/consumer
 
   api:
     image: pdrivom/api:v1
-    build:
-      context: ./
-      target: api
     hostname: usage-api
     depends_on:
       timescaledb:
         condition: service_healthy
-    extends:
-      file: timescaledb.yml
-      service: postgres
     environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: usage
       POSTGRES_HOST: *postgreshost
       POSTGRES_PORT: 5432
     ports:
@@ -109,8 +97,6 @@ services:
     networks:
       - timescale
       - api
-    volumes:
-      - ./api:/usr/src/api
 
 networks:
   timescale:
