@@ -58,7 +58,7 @@ class TimescaleReadUsage(Metadata):
     def execute_sql_query_fetch_one(self, query):
         # Gets first record returned by query in json format
         try:
-            r = self.execute_sql_query_fetch_all_json(query)
+            r = self.execute_sql_query_fetch_all(query)
             return (r[0] if r else None)
         except Exception as e:
             print(e)
