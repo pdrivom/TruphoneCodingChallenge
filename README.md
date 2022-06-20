@@ -53,3 +53,4 @@
 - add flake8 for linting
 - add consumer and database tests
 - add a NodeJS(Koa/Loopback/Nest) to implement the API in order to make clear compare between the two technologies
+- develop proper sql statement builder since sqlalchemy does not help very much
