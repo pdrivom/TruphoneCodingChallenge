@@ -42,11 +42,14 @@ After downloading the file, just run the command (on the same folder):
 
 In order to manual test the **API**, 3 different endpoints are implemented and this examples can be tested:
 
-- Get Inventory: `http://localhost:8000/api/v1/inventory`
-- Get total usage for a single SIM card over an interval of time: `http://localhost:8000/api/v1/simcard/89440001/usage?start=2020-02-01&end=2020-02-02&every=1day&page=1&size=15`
-- Get total usage for all SIM cards under a given organization over an interval of time:`http://localhost:8000/api/v1/organization/x00g8/usage?start=2020-02-01&end=2020-02-02&every=1hour&page=1&size=15`
+- GET Inventory: `http://localhost:8000/api/v1/inventory`
+- GET total usage for a single SIM card over an interval of time: `http://localhost:8000/api/v1/simcard/89440001/usage?start=2020-02-01&end=2020-02-02&every=1day&page=1&size=15`
+- GET total usage for all SIM cards under a given organization over an interval of time:`http://localhost:8000/api/v1/organization/x00g8/usage?start=2020-02-01&end=2020-02-02&every=1hour&page=1&size=15`
+
+> **This API can be tested using Postman or a Web Browser.**
 
 > URL structure: /api/v1/entity/subentity/id_parameter?query_parameters
+
 
 As shown in the REST Url's, pagination, granularity and time interval are implemented with time interval and granularity (parameter: every) as mandatory.
 
@@ -84,7 +87,7 @@ The schema is very simple, two tables **inventory** and **usage**. It could also
 
 ## Why this stack?
 
-  ### Database
+### Database
 
 Although in this case a SQL database is not a first peek, majorly because it would not be needed any complex relations and it could be assumed that the sim cards inventory were on a different data-source. Nevertheless it was chosen the [TimescaleDB](https://www.timescale.com/)  primarily to get to know the biggest diferences to ***Postgres*** (since this is a  Postgres for time-series) and a NoSQL Timeseries database like ***Riak TS*** and ***InfluxDB*** are already known.
 
@@ -102,7 +105,8 @@ Some cons identified in using **TimescaleDB**:
 - Inserts in batches are quite challenging, needing extra packages
 - The best and easy way to run SQL statements is using plane text witch gets the code a bit messy.
 
-  ### API
+
+### API
 
 Regarding API's, for this *challenge* requirements would make total sense to use the  web standards REST (HTTP protocol) since it's needed simple GET requests. So, no need for GraphQL or gRPC.
 
@@ -160,5 +164,3 @@ Future Updates:
 - https://www.timescale.com/blog/time-series-data-why-and-how-to-use-a-relational-database-instead-of-nosql-d0cd6975e87c/
 
 - https://www.influxdata.com/from-sql-to-nosql/
-
-
