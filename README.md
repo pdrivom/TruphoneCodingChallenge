@@ -42,13 +42,18 @@ After downloading the file, just run the command (on the same folder):
 
 In order to manual test the **API**, 3 different endpoints are implemented and this examples can be tested:
 
+> URL structure: /api/v1/entity/subentity/id_parameter?query_parameters
+
 - GET Inventory: `http://localhost:8000/api/v1/inventory`
 - GET total usage for a single SIM card over an interval of time: `http://localhost:8000/api/v1/simcard/89440001/usage?start=2020-02-01&end=2020-02-02&every=1day&page=1&size=15`
 - GET total usage for all SIM cards under a given organization over an interval of time:`http://localhost:8000/api/v1/organization/x00g8/usage?start=2020-02-01&end=2020-02-02&every=1hour&page=1&size=15`
 
+
 > **This API can be tested using Postman or a Web Browser.**
 
-> URL structure: /api/v1/entity/subentity/id_parameter?query_parameters
+> In order to run the Producer service multiple times, the service itself is a Flask API.
+> To run it: [POST] `http://localhost:5000/api/v1/producer/produce`
+
 
 
 As shown in the REST Url's, pagination, granularity and time interval are implemented with time interval and granularity (parameter: every) as mandatory.
@@ -152,6 +157,7 @@ Despite the fact that the existence of this repository is due to the need of dev
 The next objective is to implement the same architecture with different technologies.
 
 But firstly some bug fixing and improvements will be targeted, like:
+- Implement HATEOAS pattern,
 - Add flake8 for linting,
 - Add Consumer and Database tests,
 - Find/develop proper SQL statement builder since SqlAlchemy does not make a very good job in TimescaleDB.
