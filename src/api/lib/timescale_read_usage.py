@@ -6,16 +6,21 @@ from database.metadata import Metadata
 
 
 class JsonEncoder():
+    # Parse date based on its type
 
     def __init__(self, json_encoders):
         self.json_encoders = json_encoders
 
     def encode(self, data):
+        # runs a given function based on 'data' type
+
         if type(data) not in self.json_encoders:
             return data
         return self.json_encoders[type(data)](data)
 
 class TimescaleReadUsage(Metadata):
+    # Implementation of sql commands inheriting the table structure and connection
+
     def __init__(self, json_encoders = {}):
         super().__init__()
         self.encoder = JsonEncoder(json_encoders)
@@ -44,7 +49,7 @@ class TimescaleReadUsage(Metadata):
             print(e.pgerror)
 
     def execute_sql_query_fetch_all(self, query):
-        # Gets all records returned by query
+        # Gets all records returned by query in json format
         try:
             cursor = self.conn.cursor()
             cursor.execute(query)
@@ -73,7 +78,6 @@ class TimescaleReadUsage(Metadata):
                     GROUP BY date
                     ORDER BY date;"""
         return self.execute_sql_query_fetch_all(query)
-        #return [dict(zip(keys, l)) for l in usage ]
 
 
     def select_organization_usage(self, org_id, start, end, every):
@@ -91,4 +95,3 @@ class TimescaleReadUsage(Metadata):
             GROUP BY date;
             """
         return self.execute_sql_query_fetch_all(query)
-        #return [dict(zip(keys, l)) for (l) in usage ]

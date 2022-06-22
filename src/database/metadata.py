@@ -9,6 +9,7 @@ class Metadata(AlchemyTimescaleDB):
         super().__init__('usage')
 
     def create_metadata(self):
+        # creates tables on TimescaleDB
 
         self.inventory = sqlalchemy.Table(
             "inventory",
@@ -28,6 +29,7 @@ class Metadata(AlchemyTimescaleDB):
         super().create_metadata()
 
     async def populate(self):
+        # populates inventory table on TimescaleDB
 
         query = self.inventory.select()
         inventory = await self.database.fetch_all(query)

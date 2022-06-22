@@ -21,11 +21,14 @@ class TimescaleWriteUsage(Metadata):
             print(e.pgerror)
 
     def build_insert_into_usage(self, date, bytes_used, sim_card_id):
+        # builds sql statement to insert into usage table
         insert = f"""INSERT INTO usage (date,bytes_used,sim_card_id)
             VALUES ('{date}','{bytes_used}',{sim_card_id});"""
         return insert
 
     def execute_sql_statement_batch(self, statements):
+        # executes a list o sql statements
+        # ToDo: proper batching should be implemented
         try:
             cursor = self.conn.cursor()
             for statement in statements:

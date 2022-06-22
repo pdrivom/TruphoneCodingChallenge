@@ -51,16 +51,19 @@ async def shutdown():
 
 @app.get("/api/v1/inventory", response_model=Page[Inventory])
 async def read_inventory(page: int = 1, size: int = 50):
+    # returns simcard inventory
     inventory = await timescale.select_inventory()
     return paginate(inventory)
 
 def __read_organization(org_id: str):
+    # checks the organization existence
     org = timescale.select_organization(org_id)
     if org is None:
         raise HTTPException(status_code=404, detail= f"No organization {org_id} found!")
     return org
 
 def __read_simcard(sim_card_id: str):
+    # checks the simcard existence
     sim = timescale.select_simcard(sim_card_id)
     if sim is None:
         raise HTTPException(status_code=404, detail= f"No simcard {sim_card_id} found!")
@@ -68,6 +71,7 @@ def __read_simcard(sim_card_id: str):
 
 @app.get("/api/v1/simcard/{sim_card_id}/usage", response_model=Page[Bytes_Used])
 async def read_simcard_usage(sim_card_id: str, start: date, end: date, every: str, page: int = 1, size: int = 50):
+    # validates checks the simcard existence. If Ok returns usage
     validate_request(every)
     __read_simcard(sim_card_id)
     usage = timescale.select_simcard_usage(sim_card_id, start, end, every)
@@ -75,6 +79,7 @@ async def read_simcard_usage(sim_card_id: str, start: date, end: date, every: st
 
 @app.get("/api/v1/organization/{org_id}/usage", response_model=Page[Bytes_Used])
 async def read_organization_usage(org_id: str, start: date, end: date, every: str, page: int = 1, size: int = 50):
+    # validates checks the organization existence. If Ok returns usage
     validate_request(every)
     __read_organization(org_id)
     usage = timescale.select_organization_usage(org_id, start, end, every)
