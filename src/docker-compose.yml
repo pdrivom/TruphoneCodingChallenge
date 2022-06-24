@@ -98,6 +98,8 @@ services:
     depends_on:
       timescaledb:
         condition: service_healthy
+      producer:
+        condition: service_started
     extends:
       file: timescaledb.yml
       service: postgres
