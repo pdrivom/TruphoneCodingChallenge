@@ -20,7 +20,7 @@ class Bytes_Used(BaseModel):
         allow_population_by_field_name = True
 
 def validate_parameter_every(every):
-    pattern = '(\dhour|\dday)'
+    pattern = r'(\dhour|\dday)'
     result = re.match(pattern, every)
     return False if result is None else True
 
@@ -41,7 +41,6 @@ timescale = TimescaleReadUsage({datetime:convert_datetime_to_iso_8601})
 @app.on_event("startup")
 async def startup():
     await timescale.database.connect()
-    timescale.connect_sync()
     timescale.create_metadata()
     await timescale.populate()
 

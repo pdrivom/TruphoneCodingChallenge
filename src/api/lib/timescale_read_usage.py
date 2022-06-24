@@ -24,6 +24,7 @@ class TimescaleReadUsage(Metadata):
     def __init__(self, json_encoders = {}):
         super().__init__()
         self.encoder = JsonEncoder(json_encoders)
+        self.conn = psycopg2.connect(self.DATABASE_URL)
 
     def convert_datetime_to_iso_8601(datetime: datetime):
         return datetime.strftime('%Y-%m-%d:%H:%M:%S')
@@ -39,14 +40,6 @@ class TimescaleReadUsage(Metadata):
     def select_simcard(self, sim_card_id):
         query = f"SELECT sim_card_id FROM inventory WHERE sim_card_id like '{sim_card_id}';"
         return self.execute_sql_query_fetch_one(query)
-
-    def connect_sync(self):
-        # Connects to TimescaleDB
-        try:
-            self.conn = psycopg2.connect(self.DATABASE_URL)
-            print(f"Connected to TimescaleDB [{self.DATABASE_URL}]")
-        except psycopg2.Error as e:
-            print(e.pgerror)
 
     def execute_sql_query_fetch_all(self, query):
         # Gets all records returned by query in json format

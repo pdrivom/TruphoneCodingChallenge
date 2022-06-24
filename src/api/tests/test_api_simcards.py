@@ -26,7 +26,7 @@ def test_read_simcard_usage_pagination():
     assert "total" in resp
     assert resp["page"] == page
     assert resp["size"] == size
-    assert len(resp["items"]) == resp["total"]
+    assert len(resp["items"]) == resp["size"]
 
 def test_read_inexistent_simcard_usage():
     """Test if reading inexistent sim_card_id returns 404 on full request"""
